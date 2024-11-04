@@ -23,7 +23,7 @@ public class DiscordBot extends ListenerAdapter {
     public DiscordBot() {
         AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
         this.player = playerManager.createPlayer();
-        String token = "MTI5ODU1Njg0MjE1ODU4NzkwNA.GdF9ZW.T0Cqe28gFGxtingmXcbgkeSz5Nq_aolwiNl_H4";
+        String token = System.getenv("DISCORD_BOT_TOKEN");
         JDABuilder jdaBuilder = JDABuilder.createDefault(token);
         jdaBuilder.addEventListeners(this);
         jdaBuilder.enableIntents(GatewayIntent.MESSAGE_CONTENT);
@@ -44,32 +44,18 @@ public class DiscordBot extends ListenerAdapter {
         }
 
         if (message.startsWith("!")) {
-            String[] command = message.split(" ");
-            if (command.length > 1) {
-                connectToVoiceChannel(event.getGuild());
-                System.out.println(command[1]);
-                PlayManager.getInstance().loadAndPlay(event.getChannel().asTextChannel(), command[1]);
-            } else {
-                System.out.println("No arguments found in the message");
-            }
+            handleMusicCommand(event, message);
+        } else if (message.startsWith("&")) {
+            handleChatCommand(event, message);
         }
-        if(message.startsWith("&")){
-            String[] command = message.split(" ");
-            if (command.length > 1) {
-                System.out.println(command[1]);
-                String response = getChatGPTResponse(command[1]);
-                event.getChannel().sendMessage(response).queue();
 
-            } else {
-                System.out.println("No arguments found in the message");
-            }
-        }
+
     }
 
     private String getChatGPTResponse(String message) {
         try {
             // 配置OpenAI API請求
-            String apiKey = "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";
+            String apiKey = System.getenv("OPENAI_API_KEY");
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.openai.com/v1/completions"))
@@ -100,6 +86,27 @@ public class DiscordBot extends ListenerAdapter {
         }
     }
 
+    private void handleMusicCommand(MessageReceivedEvent event, String message) {
+        String[] command = message.split(" ");
+        if (command.length > 1) {
+            connectToVoiceChannel(event.getGuild());
+            System.out.println(command[1]);
+            PlayManager.getInstance().loadAndPlay(event.getChannel().asTextChannel(), command[1]);
+        } else {
+            System.out.println("沒有在訊息中找到參數");
+        }
+    }
+
+    private void handleChatCommand(MessageReceivedEvent event, String message) {
+        String[] command = message.split(" ");
+        if (command.length > 1) {
+            System.out.println(command[1]);
+            String response = getChatGPTResponse(command[1]);
+            event.getChannel().sendMessage(response).queue();
+        } else {
+            System.out.println("沒有在訊息中找到參數");
+        }
+    }
 
     public void connectToVoiceChannel(Guild guild) {
         if (guild.getVoiceChannels().isEmpty()) {
